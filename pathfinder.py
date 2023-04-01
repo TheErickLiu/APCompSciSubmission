@@ -39,12 +39,6 @@ def neighbors(p: Point, obstacles: set, N: int, M: int) -> list:
         x, y = p.x + d[0], p.y + d[1]
         if (x, y) in obstacles or y <= 0 or x <= 0 or y >= N or x >= M:
             continue
-
-        # Check for obstacles blocking diagonal movement
-        if d[0] != 0 and d[1] != 0:
-            if (p.x + d[0], p.y) in obstacles or (p.x, p.y + d[1]) in obstacles:
-                continue
-
         good_neighbors.append((x, y))
     
     return good_neighbors
@@ -142,7 +136,7 @@ def find_path(waypoints: list, polygons: list, N: int, M: int):
     :param polygons: Points of polygons that can not be visited
     :param N: height of the grid
     :param M: width of the grid
-    :returns: A path to all the waypoints in order, including the obstacle points blocking the path, and a boolean indicating if the path is direct
+    :returns: A path to all the waypoints in order, including the obstacle points blocking the path
     '''
 
     obstacles = polygons
@@ -164,10 +158,10 @@ def find_path(waypoints: list, polygons: list, N: int, M: int):
 
             if obstacle_point:
                 # Add the path to the obstacle and the obstacle point itself
-                path_to_obstacle = get_path_to_obstacle(waypoints[i], obstacle_point, obstacles, N, M)
+                remaining_obstacles = [obs for obs in obstacles if obs != obstacle_point]
+                path_to_obstacle = get_path_to_obstacle(waypoints[i], obstacle_point, remaining_obstacles, N, M)
                 final_path.extend(path_to_obstacle)
                 final_path.append(obstacle_point)
-            return final_path, False
         else:
             # Only includes the first point if it is from the first path segment;
             # it has been included in the previous path.
@@ -176,7 +170,8 @@ def find_path(waypoints: list, polygons: list, N: int, M: int):
             else:
                 final_path.extend(path_segment[1:])
     
-    return final_path, True
+    return final_path
+
 '''
 The code below used to make the grid was created by this stack overflow forem
 https://stackoverflow.com/questions/33963361/how-to-make-a-grid-in-pygame
@@ -239,13 +234,14 @@ def gui_to_obstacles():
 def main(waypoints):
     polygons = gui_to_obstacles()
     N, M = 40, 60
+
     return find_path(waypoints, polygons, N, M)
 
 while not done:
     for event in pygame.event.get():
         if event.type == pygame.KEYDOWN:
             if event.type == pygame.QUIT:
-                done = True
+                done = True 
 
             if event.key == pygame.K_a:
                 last_key = "a"
@@ -280,7 +276,7 @@ while not done:
                     for c in range(60):
                         grid[r][c] = 0
                 waypoints_grid.clear()
-
+            
             elif event.key == pygame.K_x:
                 pygame.quit()
                 print("Thanks for Playing!")
@@ -311,7 +307,10 @@ while not done:
             elif grid[row][column] == 3:
                 color = route
             elif grid[row][column] == 4:
-                color = route_unavailable
+                if (row, column) in waypoints_grid:
+                    color = waypoint
+                else:
+                    color = route_unavailable
             pygame.draw.rect(screen, color, [(margin + width) * column + margin, (margin + height) * row + margin, width, height])
     clock.tick(60)
 
