@@ -123,6 +123,15 @@ def navigate(p1: tuple, p2: tuple, obstacles: set, N: int, M: int) -> list:
     return []
 
 def get_path_to_obstacle(waypoint: tuple, obstacle: tuple, obstacles: set, N: int, M: int) -> list:
+    '''
+    get_path_to_obstacle finds a path from the waypoint to an obstacle point.
+    :param waypoint: Start point of the path
+    :param obstacle: End point of the path, which is an obstacle point
+    :param obstacles: Set of points that can not be visited, excluding the obstacle point itself
+    :param N: height of the grid
+    :param M: width of the grid
+    :return: The path from the start point to the obstacle point, not including the obstacle point itself.
+    '''
     path_to_obstacle = navigate(waypoint, obstacle, obstacles, N, M)
     if path_to_obstacle:
         return path_to_obstacle[:-1]  # Exclude the obstacle point itself
@@ -177,78 +186,97 @@ The code below used to make the grid was created by this stack overflow forem
 https://stackoverflow.com/questions/33963361/how-to-make-a-grid-in-pygame
 Other edits made to it are made by me.
 '''
-
+# Define colors
 background = (10, 10, 40)
 border = (30, 30, 60)
 waypoint = (0, 255, 0)
 obstacle = (255, 255, 255)
 route = (143, 212, 242)
 route_unavailable = (232, 66, 51)
+
+# Define grid cell size and margin
 width, height = 20, 20
 margin = 1
 last_key = "a"
 
+# Initialize grid with zeros
 grid = []
 for row in range(40):
     grid.append([])
     for column in range(60):
         grid[row].append(0)
 
+# Initialize Pygame
 pygame.init()
 
+# Set up window and title
 WINDOW_SIZE = [1260, 840]
 screen = pygame.display.set_mode(WINDOW_SIZE)
-
 pygame.display.set_caption("'a' = waypoint, 's' = obstacle, 'd' = erase, 'f' = start, 'backspace' = clear, 'x' = end game")
 
+# Initialize variables
 done = False
 clock = pygame.time.Clock()
 last_grid_changed = 0, 0
 draw = True
 waypoints_grid = []
 
+# Function to draw on grid
 def draw(row: int, column: int, last_key):
+    '''
+    draw sets a point on the grid to a waypoint, an obstacle, or an empty grid space
+    :row: The row the point is on
+    :column: The column the point is on
+    :last_key: The last key that was pressed and what determines what the point should be
+    :returns: A list of every point on the grid that is an obstacle
+    '''
     if last_key == "a":
         waypoints_grid.append((row, column))
-        #print("Waypoint Added", waypoints)
         grid[row][column] = 1
     elif last_key == "d":
         if grid[row][column] == 1:
             waypoints_grid.remove((row, column))
-            #print("Waypoint removed", waypoints)
         grid[row][column] = 0
     elif last_key == "s":
         if grid[row][column] == 1:
             waypoints_grid.remove((row, column))
-            #print("Waypoint removed", waypoints)
         grid[row][column] = 2
 
 def gui_to_obstacles():
+    '''
+    gui_to_obstacles takes every point on the grid and puts them into a list
+    :returns: A list of every point on the grid that is an obstacle
+    '''
     border = []
     for r in range(40):
         for c in range(60):
             if grid[r][c] == 2:
                 border.append((r, c))
     return border
-   
+
+# Main function
 def main(waypoints):
     polygons = gui_to_obstacles()
     N, M = 40, 60
 
     return find_path(waypoints, polygons, N, M)
 
+# Main loop
 while not done:
     for event in pygame.event.get():
+        # Handle key presses
         if event.type == pygame.KEYDOWN:
             if event.type == pygame.QUIT:
                 done = True 
 
+            # Change tool based on key press
             if event.key == pygame.K_a:
                 last_key = "a"
             elif event.key == pygame.K_s:
                 last_key = "s"
             elif event.key == pygame.K_d:
                 last_key = "d"
+            # Find path when 'f' is pressed
             elif event.key == pygame.K_f:
                 if len(waypoints_grid) <= 1:
                     print("Can't do that, you need more than one waypoint!")
@@ -270,22 +298,25 @@ while not done:
                                 break
                             else:
                                 grid[i[0]][i[1]] = 3
-                                #print(i[0], i[1])
+            # Clear grid when 'backspace' is pressed
             elif event.key == pygame.K_BACKSPACE:
                 for r in range(40):
                     for c in range(60):
                         grid[r][c] = 0
                 waypoints_grid.clear()
             
+            # End the game when 'x' is pressed
             elif event.key == pygame.K_x:
                 pygame.quit()
                 print("Thanks for Playing!")
 
+        # Handle mouse clicks
         elif pygame.mouse.get_pressed()[0]:
             pos = pygame.mouse.get_pos()
             column = pos[0] // (width + margin)
             row = pos[1] // (height + margin)
 
+            # Check if the grid cell has changed
             if last_grid_changed[0] == 0 and last_grid_changed[1] == 0:
                 last_grid_changed = row, column
             elif row == last_grid_changed[0] and column == last_grid_changed[1]:
@@ -293,10 +324,13 @@ while not done:
             else:
                 last_grid_changed = row, column
 
+            # Draw on the grid
             draw(row, column, last_key)
 
+    # Fill the background color
     screen.fill(background)
 
+    # Draw grid cells
     for row in range(40):
         for column in range(60):
             color = border
@@ -312,7 +346,10 @@ while not done:
                 else:
                     color = route_unavailable
             pygame.draw.rect(screen, color, [(margin + width) * column + margin, (margin + height) * row + margin, width, height])
+
     clock.tick(60)
 
+    # Update the display
     pygame.display.flip()
+
 pygame.quit()
